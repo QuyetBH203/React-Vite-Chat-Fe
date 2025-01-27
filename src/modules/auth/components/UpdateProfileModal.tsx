@@ -1,17 +1,8 @@
 import { yupResolver } from "@hookform/resolvers/yup"
-import {
-  Button,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-  Avatar,
-} from "@nextui-org/react"
-import { AxiosResponse } from "axios"
+import { Button, ModalBody, ModalFooter, ModalHeader } from "@nextui-org/react"
 import clsx from "clsx"
 import Field from "components/core/field"
 import Input from "components/core/field/Input"
-import { accept, maxSize } from "constants/upload"
-import useUpload from "hooks/useUpload"
 import {
   UpdateUserProfileRequest,
   useUpdateUserProfile,
