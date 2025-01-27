@@ -1,18 +1,8 @@
 import { yupResolver } from "@hookform/resolvers/yup"
-import {
-  Button,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-  Avatar,
-} from "@nextui-org/react"
-import { AxiosResponse } from "axios"
+import { Button, ModalBody, ModalFooter, ModalHeader } from "@nextui-org/react"
 import clsx from "clsx"
-import LoadingIcon from "components/common/LoadingIcon"
 import Field from "components/core/field"
 import Input from "components/core/field/Input"
-import { accept, maxSize } from "constants/upload"
-import useUpload from "hooks/useUpload"
 import {
   UpdateUserProfileRequest,
   useUpdateUserProfile,
@@ -56,7 +46,7 @@ export default function UpdateProfileModal({ onClose, ...profile }: Props) {
         profile.avatarUrl || "https://i.pravatar.cc/150?u=a042581f4e29026704d",
       fullName: profile.fullName || "",
       gender: profile.gender || "",
-      phoneNumber: "+84",
+      phoneNumber: profile.phoneNumber || "+84",
     },
     resolver: yupResolver(formSchema),
     mode: "onChange",
@@ -65,32 +55,34 @@ export default function UpdateProfileModal({ onClose, ...profile }: Props) {
     const file = event.target.files?.[0]
     if (file) {
       setAvatarUrl(URL.createObjectURL(file))
+      methods.setValue("avatarUrl", URL.createObjectURL(file), {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      console.log(avatarUrl)
       setAvatarFile(file)
     }
   }
-
-  const onSuccess = (data: AxiosResponse<string>) => {
-    setAvatarUrl(data.data)
-    methods.setValue("avatarUrl", data.data, {
-      shouldDirty: true,
-      shouldValidate: true,
-    })
-
-    return data.data
-  }
-
-  const { getRootProps, isPending: isPendingUpload } = useUpload<string>({
-    url: "/upload/image",
-    accept,
-    maxSize,
-    onSuccess,
-  })
 
   const { mutate, isPending: isPendingUpdate } = useUpdateUserProfile()
 
   const onSubmit = (data: UpdateUserProfileRequest) => {
     console.log(data)
-    mutate(data, {
+    const formData = new FormData()
+    if (avatarFile) {
+      formData.append("avatar", avatarFile)
+    }
+    if (data.fullName) {
+      formData.append("fullName", data.fullName)
+    }
+    if (data.gender) {
+      formData.append("gender", data.gender)
+    }
+    if (data.phoneNumber) {
+      formData.append("phoneNumber", data.phoneNumber)
+    }
+
+    mutate(formData, {
       onSuccess: (data) => {
         setUser({ ...user, profile: data })
         toast.success("Profile updated successfully")
@@ -112,20 +104,23 @@ export default function UpdateProfileModal({ onClose, ...profile }: Props) {
           <ModalBody>
             <div className="flex justify-center">
               <div
-                {...getRootProps()}
                 className={clsx(
-                  "flex justify-center items-center w-[140px] h-[140px]",
+                  "relative flex justify-center items-center w-[140px] h-[140px]",
                   "border-2 border-dashed border-primary rounded-full overflow-hidden",
                   "cursor-pointer",
                   {
-                    "p-8": !avatarUrl || isPendingUpload,
+                    "p-8": !avatarUrl,
                     "!border-solid border-4": avatarUrl,
                   },
                 )}
               >
-                {isPendingUpload ? (
-                  <LoadingIcon />
-                ) : avatarUrl ? (
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute w-full h-full  cursor-pointer opacity-0"
+                  onChange={handelAvatarChange}
+                />
+                {avatarUrl ? (
                   <div
                     style={{
                       backgroundImage: `url('${avatarUrl}')`,
@@ -168,7 +163,7 @@ export default function UpdateProfileModal({ onClose, ...profile }: Props) {
               size="lg"
               type="submit"
               color="primary"
-              isLoading={isPendingUpdate || isPendingUpload}
+              isLoading={isPendingUpdate}
               isDisabled={
                 profile.fullName
                   ? !methods.formState.isValid || !methods.formState.isDirty
